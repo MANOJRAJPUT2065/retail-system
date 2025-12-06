@@ -1,0 +1,18 @@
+{
+  "name": "retail-sales-system",
+  "version": "1.0.0",
+  "description": "Retail Sales Management System with Search, Filter, Sort and Pagination",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "npm start --prefix backend",
+    "client": "npm start --prefix frontend",
+    "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend"
+  },
+  "keywords": ["retail", "sales", "management", "dashboard"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
