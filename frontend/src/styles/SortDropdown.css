@@ -1,0 +1,39 @@
+.sort-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-dropdown label {
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.sort-dropdown select {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.sort-dropdown select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+@media (max-width: 768px) {
+  .sort-dropdown {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .sort-dropdown select {
+    width: 100%;
+  }
+}
+
