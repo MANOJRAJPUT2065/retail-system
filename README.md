@@ -2,7 +2,7 @@
 
 <img width="2400" height="1600" alt="image" src="https://github.com/user-attachments/assets/0e849aee-729c-49a4-a259-b98d4881d8a4" />
 
-<img width="2400" height="1600" alt="image" src="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/d64f203865b8ac7eed4759e3f00bfc83/b6fe735d-f630-4988-b4ba-5b9a5e67d12e/1507fbb4.png" />
+
 
 ## Overview
 
