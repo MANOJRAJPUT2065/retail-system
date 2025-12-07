@@ -30,7 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/retail_sales', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://manojrajput2065:Himalaya%40123@cluster0.qpxsllw.mongodb.net/retail_sales', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })

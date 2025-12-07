@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "Backend API for Retail Sales Management System",
   "main": "src/index.js",
+  
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "seed": "node src/utils/seedData.js"
-  },
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js",
+  "seed": "node src/utils/seedData.js",
+  "build": "echo 'no build needed'"
+},
   "dependencies": {
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
