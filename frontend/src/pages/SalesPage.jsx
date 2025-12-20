@@ -18,7 +18,8 @@ const SalesPage = () => {
     page,
     updateFilters,
     updatePage,
-    resetFilters
+    resetFilters,
+    loadMore
   } = useSales();
 
   const { options: filterOptions, loading: optionsLoading } = useFilterOptions();
@@ -38,11 +39,12 @@ const SalesPage = () => {
 
   return (
     <div className="sales-page">
-      <header className="sales-header">
-        <h1>Retail Sales Management System</h1>
-      </header>
-
       <div className="sales-container">
+        <div className="page-header">
+          <h1>Sales Management</h1>
+          <p>View and manage all sales transactions</p>
+        </div>
+
         <div className="sales-controls">
           <div className="controls-top">
             <SearchBar onSearch={handleSearch} value={filters.search} />
@@ -83,14 +85,18 @@ const SalesPage = () => {
                 </div>
               ) : (
                 <>
+                  <div className="sales-info">
+                    <span className="record-count">📊 Total Records: {pagination.totalItems}</span>
+                    <span className="record-progress">Showing {sales.length} of {pagination.totalItems}</span>
+                  </div>
                   <SalesTable sales={sales} />
-                  <Pagination
-                    currentPage={pagination.currentPage}
-                    totalPages={pagination.totalPages}
-                    hasNextPage={pagination.hasNextPage}
-                    hasPrevPage={pagination.hasPrevPage}
-                    onPageChange={updatePage}
-                  />
+                  {pagination.hasNextPage && (
+                    <div className="load-more-container">
+                      <button className="load-more" onClick={loadMore} disabled={loading}>
+                        {loading ? 'Loading…' : `Load More (${sales.length}/${pagination.totalItems})`}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </>

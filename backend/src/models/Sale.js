@@ -37,6 +37,9 @@ saleSchema.index({ gender: 1 });
 saleSchema.index({ productCategory: 1 });
 saleSchema.index({ paymentMethod: 1 });
 saleSchema.index({ date: -1 });
+// Compound indexes for common queries
+saleSchema.index({ date: -1, customerRegion: 1 });
+saleSchema.index({ date: -1, productCategory: 1 });
 
 module.exports = mongoose.model('Sale', saleSchema);
 

@@ -4,6 +4,8 @@ const cors = require('cors');
 require('dotenv').config();
 
 const salesRoutes = require('./routes/sales');
+const productsRoutes = require('./routes/products');
+const ordersRoutes = require('./routes/orders');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,6 +41,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://manojrajput2065:Himal
 
 // Routes
 app.use('/api/sales', salesRoutes);
+app.use('/api/products', productsRoutes);
+app.use('/api/orders', ordersRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

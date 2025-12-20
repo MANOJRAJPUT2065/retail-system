@@ -29,14 +29,15 @@ const useSales = () => {
   });
   const [page, setPage] = useState(1);
 
-  const fetchSales = useCallback(async () => {
+  const fetchSales = useCallback(async (pageArg = 1, append = false) => {
     setLoading(true);
     setError(null);
 
     try {
       const params = {
-        page,
-        limit: 10,
+        page: pageArg,
+        // Use a reasonable page size for large datasets
+        limit: 2000,
         ...filters,
         regions: filters.regions.join(','),
         genders: filters.genders.join(','),
@@ -58,18 +59,20 @@ const useSales = () => {
       });
 
       const data = await salesAPI.getSales(params);
-      setSales(data.sales);
       setPagination(data.pagination);
+      setSales(prev => (append ? [...prev, ...data.sales] : data.sales));
     } catch (err) {
       setError(err.message || 'Failed to fetch sales data');
       console.error('Error fetching sales:', err);
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [filters]);
 
   useEffect(() => {
-    fetchSales();
+    // On filter change, reset to first page and fetch fresh data
+    setPage(1);
+    fetchSales(1, false);
   }, [fetchSales]);
 
   const updateFilters = (newFilters) => {
@@ -79,6 +82,15 @@ const useSales = () => {
 
   const updatePage = (newPage) => {
     setPage(newPage);
+  };
+
+  const loadMore = async () => {
+    if (pagination.hasNextPage) {
+      const nextPage = page + 1;
+      // Fetch next page and append
+      await fetchSales(nextPage, true);
+      setPage(nextPage);
+    }
   };
 
   const resetFilters = () => {
@@ -109,7 +121,8 @@ const useSales = () => {
     updateFilters,
     updatePage,
     resetFilters,
-    refetch: fetchSales
+    refetch: fetchSales,
+    loadMore
   };
 };
 
