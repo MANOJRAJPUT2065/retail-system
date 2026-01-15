@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import salesAPI from '../services/api';
+import { salesAPI } from '../services/api';
 import '../styles/OrderHistory.css';
 
 export default function OrderHistoryPage() {
@@ -8,16 +8,28 @@ export default function OrderHistoryPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest'); // newest or oldest
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [filter, sortOrder, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset to page 1 when filters change
+  }, [filter, sortOrder, searchTerm, itemsPerPage]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await salesAPI.getOrderHistory();
-      setOrders(response.data);
+      const data = await salesAPI.getOrderHistoryFiltered({
+        status: filter !== 'all' ? filter : undefined,
+        sortOrder: sortOrder,
+        search: searchTerm || undefined,
+        limit: 1000
+      });
+      setOrders(data);
     } catch (err) {
       console.error('Error loading orders:', err);
     } finally {
@@ -26,21 +38,23 @@ export default function OrderHistoryPage() {
   };
 
   const getFilteredOrders = () => {
-    let filtered = orders;
+    // Backend is already handling filtering and sorting
+    return orders;
+  };
 
-    if (filter !== 'all') {
-      filtered = filtered.filter(order => order.status === filter);
-    }
+  // Pagination logic
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = orders.slice(startIndex, endIndex);
 
-    if (searchTerm) {
-      filtered = filtered.filter(order =>
-        order._id?.includes(searchTerm) ||
-        order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customerPhone?.includes(searchTerm)
-      );
-    }
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-    return filtered;
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
   };
 
   const getStatusColor = (status) => {
@@ -114,6 +128,24 @@ export default function OrderHistoryPage() {
           </select>
         </div>
 
+        <div className="filter-group">
+          <label>Sort:</label>
+          <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+            <option value="newest">⬇️ Newest First</option>
+            <option value="oldest">⬆️ Oldest First</option>
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Items per page:</label>
+          <select value={itemsPerPage} onChange={handleItemsPerPageChange}>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
         <input
           type="text"
           placeholder="🔍 Search by Order ID, Customer, or Phone..."
@@ -131,7 +163,7 @@ export default function OrderHistoryPage() {
 
       {!loading && filteredOrders.length > 0 && (
         <div className="orders-list">
-          {filteredOrders.map(order => (
+          {paginatedOrders.map(order => (
             <div
               key={order._id}
               className={`order-card status-${order.status}`}
@@ -246,6 +278,65 @@ export default function OrderHistoryPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && orders.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, orders.length)} of {orders.length} orders
+          </div>
+          
+          <div className="pagination-controls">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+            >
+              ← Previous
+            </button>
+            
+            <div className="pagination-pages">
+              {currentPage > 2 && (
+                <>
+                  <button onClick={() => handlePageChange(1)} className="pagination-page">1</button>
+                  {currentPage > 3 && <span className="pagination-ellipsis">...</span>}
+                </>
+              )}
+              
+              {currentPage > 1 && (
+                <button onClick={() => handlePageChange(currentPage - 1)} className="pagination-page">
+                  {currentPage - 1}
+                </button>
+              )}
+              
+              <button className="pagination-page active">{currentPage}</button>
+              
+              {currentPage < totalPages && (
+                <button onClick={() => handlePageChange(currentPage + 1)} className="pagination-page">
+                  {currentPage + 1}
+                </button>
+              )}
+              
+              {currentPage < totalPages - 1 && (
+                <>
+                  {currentPage < totalPages - 2 && <span className="pagination-ellipsis">...</span>}
+                  <button onClick={() => handlePageChange(totalPages)} className="pagination-page">
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="pagination-btn"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
     </div>

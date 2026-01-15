@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Prefer localhost during dev regardless of env, unless env explicitly points to localhost
+const envBase = (import.meta.env.VITE_API_URL || '').trim();
+const isLocalHost = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+);
+const fallbackProd = 'https://retail-system-production-d4d7.up.railway.app/api';
+const fallbackDev = 'http://localhost:5000/api';
+const envIsLocal = /localhost|127\.0\.0\.1/.test(envBase);
+const API_BASE_URL = isLocalHost
+  ? (envIsLocal ? envBase : fallbackDev)
+  : (envBase || fallbackProd);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,8 +39,14 @@ export const salesAPI = {
   },
 
   getDashboardStats: async () => {
-    const response = await api.get('/sales/dashboard/stats');
-    return response.data;
+    try {
+      const response = await api.get('/sales/dashboard/stats');
+      return response.data;
+    } catch (err) {
+      // Fallback for backends exposing alias route
+      const fallback = await api.get('/dashboard/stats');
+      return fallback.data;
+    }
   },
 
   uploadCSV: async (formData) => {
@@ -92,9 +108,14 @@ export const salesAPI = {
     return response.data;
   },
 
-  getSalesTrends: async (timeframe) => {
+  getOrderHistoryFiltered: async (params) => {
+    const response = await api.get('/orders/history', { params });
+    return response.data;
+  },
+
+  getSalesTrends: async (timeframe, params = {}) => {
     const response = await api.get('/sales/trends', {
-      params: { timeframe }
+      params: { timeframe, ...params }
     });
     return response.data;
   },

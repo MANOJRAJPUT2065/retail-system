@@ -3,6 +3,7 @@ const path = require('path');
 const csv = require('csv-parser');
 const mongoose = require('mongoose');
 const Sale = require('../models/Sale');
+const { detectCSVSchema, getColumnMapping, compareSchemas, logSchemaComparison } = require('../utils/schemaSync');
 require('dotenv').config();
 
 const CSV_FILE_PATH = path.join(__dirname, '../../uploads/truestate_assignment_dataset.csv');
@@ -35,11 +36,14 @@ const parseNumber = (val, def = 0) => {
   return isNaN(num) ? def : num;
 };
 
-const importCSV = async () => {
+const importCSV = async (columnMapping = null, autoDetectColumns = true) => {
   let saved = 0;
   let processed = 0;
   const batchSize = 5000;
   let batch = [];
+  
+  // Store to track any extra columns found
+  const extraColumns = new Set();
 
   return new Promise((resolve, reject) => {
     const stream = fs.createReadStream(CSV_FILE_PATH).pipe(csv());
@@ -79,6 +83,38 @@ const importCSV = async () => {
           salespersonId: `EMP-${Math.floor(Math.random() * 1000)}`,
           employeeName: 'CSV Import'
         };
+        
+        // 🔥 AUTO-DETECT & ADD EXTRA COLUMNS FROM CSV
+        if (autoDetectColumns) {
+          const knownFields = Object.keys(record);
+          Object.keys(row).forEach(csvColumn => {
+            const fieldName = columnMapping && columnMapping[csvColumn] 
+              ? columnMapping[csvColumn]
+              : csvColumn.trim().replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).map((w, i) => 
+                  i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+                ).join('');
+            
+            if (!knownFields.includes(fieldName) && row[csvColumn] !== undefined && row[csvColumn] !== null && String(row[csvColumn]).trim() !== '') {
+              // Track new column
+              if (!extraColumns.has(csvColumn)) {
+                extraColumns.add(csvColumn);
+                console.log(`🆕 Auto-detected new column: "${csvColumn}" → ${fieldName}`);
+              }
+              
+              // Auto-parse value based on type
+              let value = row[csvColumn];
+              if (!isNaN(parseFloat(value)) && isFinite(value)) {
+                value = parseFloat(value);
+              } else if (!isNaN(Date.parse(value)) && value.includes('-')) {
+                value = new Date(value);
+              } else if (['true', 'false'].includes(String(value).toLowerCase())) {
+                value = String(value).toLowerCase() === 'true';
+              }
+              
+              record[fieldName] = value;
+            }
+          });
+        }
 
         // Ensure finalAmount consistent if missing
         if (!record.finalAmount || record.finalAmount === 0) {
@@ -148,9 +184,19 @@ const main = async () => {
 
     // Connect to MongoDB
     await connectDB();
+    
+    // 🔥 AUTO-DETECT CSV SCHEMA
+    console.log('🔍 Analyzing CSV schema...');
+    const detectedSchema = await detectCSVSchema(CSV_FILE_PATH);
+    const columnMapping = getColumnMapping(detectedSchema);
+    
+    // Compare with existing model schema
+    const existingSchema = Sale.schema.paths;
+    const comparison = compareSchemas(detectedSchema, existingSchema);
+    logSchemaComparison(comparison);
 
     // Import CSV data (streaming + batched inserts)
-    const { processed, saved } = await importCSV();
+    const { processed, saved } = await importCSV(columnMapping, true);
 
     console.log(`\n✅ Import completed successfully! Inserted ${saved} of ${processed} processed`);
     console.log('🌐 You can now view the data on frontend at: http://localhost:5173/sales');

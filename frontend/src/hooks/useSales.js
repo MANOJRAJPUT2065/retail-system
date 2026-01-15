@@ -28,16 +28,16 @@ const useSales = () => {
     sortOrder: 'desc'
   });
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
-  const fetchSales = useCallback(async (pageArg = 1, append = false) => {
+  const fetchSales = useCallback(async (pageArg = page, append = false) => {
     setLoading(true);
     setError(null);
 
     try {
       const params = {
         page: pageArg,
-        // Use a reasonable page size for large datasets
-        limit: 2000,
+        limit,
         ...filters,
         regions: filters.regions.join(','),
         genders: filters.genders.join(','),
@@ -60,19 +60,18 @@ const useSales = () => {
 
       const data = await salesAPI.getSales(params);
       setPagination(data.pagination);
-      setSales(prev => (append ? [...prev, ...data.sales] : data.sales));
+      setSales(data.sales);
     } catch (err) {
       setError(err.message || 'Failed to fetch sales data');
       console.error('Error fetching sales:', err);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, page, limit]);
 
   useEffect(() => {
-    // On filter change, reset to first page and fetch fresh data
-    setPage(1);
-    fetchSales(1, false);
+    // Refetch whenever filters, page or limit change
+    fetchSales(page, false);
   }, [fetchSales]);
 
   const updateFilters = (newFilters) => {
@@ -84,13 +83,9 @@ const useSales = () => {
     setPage(newPage);
   };
 
-  const loadMore = async () => {
-    if (pagination.hasNextPage) {
-      const nextPage = page + 1;
-      // Fetch next page and append
-      await fetchSales(nextPage, true);
-      setPage(nextPage);
-    }
+  const updateLimit = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1);
   };
 
   const resetFilters = () => {
@@ -118,11 +113,12 @@ const useSales = () => {
     error,
     filters,
     page,
+    limit,
     updateFilters,
     updatePage,
+    updateLimit,
     resetFilters,
-    refetch: fetchSales,
-    loadMore
+    refetch: fetchSales
   };
 };
 

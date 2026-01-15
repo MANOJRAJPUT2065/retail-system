@@ -23,7 +23,7 @@ Your retail system is **fully configured** to:
 ### **Backend Upload Settings**
 
 - **Max Records Per Upload:** 1000
-- **Max File Size:** 10MB
+- **Max File Size:**
 - **Validation:** CSV format only
 - **Database:** MongoDB (unlimited storage)
 

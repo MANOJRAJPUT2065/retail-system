@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Core schema with required fields
 const saleSchema = new mongoose.Schema({
   customerId: { type: String, required: true },
   customerName: { type: String, required: true, index: true },
@@ -27,7 +28,8 @@ const saleSchema = new mongoose.Schema({
   salespersonId: { type: String, required: true },
   employeeName: { type: String, required: true }
 }, {
-  timestamps: true
+  timestamps: true,
+  strict: false  // 🔥 Allow dynamic fields from CSV!
 });
 
 // Create indexes for search and filtering
@@ -42,4 +44,3 @@ saleSchema.index({ date: -1, customerRegion: 1 });
 saleSchema.index({ date: -1, productCategory: 1 });
 
 module.exports = mongoose.model('Sale', saleSchema);
-

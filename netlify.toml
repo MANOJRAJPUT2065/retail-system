@@ -1,6 +1,6 @@
 [build]
   base = "frontend"
-  publish = "frontend/dist"
+  publish = "dist"
   command = "npm run build"
 
 [[redirects]]
@@ -10,4 +10,5 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_API_URL = "https://retail-system-production-d4d7.up.railway.app/api"
 

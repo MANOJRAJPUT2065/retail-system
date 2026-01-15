@@ -43,3 +43,6 @@ coverage/
 # Large CSV files
 *.csv
 backend/truestate_assignment_dataset.csv
+
+# Local Netlify folder
+.netlify

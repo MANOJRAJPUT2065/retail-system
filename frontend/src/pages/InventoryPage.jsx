@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import salesAPI from '../services/api';
+import { salesAPI } from '../services/api';
 import '../styles/Inventory.css';
 
 export default function InventoryPage() {
@@ -15,8 +15,8 @@ export default function InventoryPage() {
   const fetchInventory = async () => {
     try {
       setLoading(true);
-      const response = await salesAPI.getInventory();
-      setInventory(response.data);
+      const data = await salesAPI.getInventory();
+      setInventory(data);
       setError(null);
     } catch (err) {
       setError('Failed to load inventory');

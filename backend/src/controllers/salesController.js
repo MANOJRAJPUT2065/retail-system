@@ -1,6 +1,7 @@
 const salesService = require('../services/salesService');
 
 const getSales = async (req, res) => {
+  console.log('Get sales request with query:', req.query);
   try {
     const {
       page = 1,
@@ -41,6 +42,7 @@ const getSales = async (req, res) => {
     );
 
     res.json(result);
+    console.log('Sales data sent:', result);
   } catch (error) {
     console.error('Error fetching sales:', error);
     res.status(500).json({ error: 'Failed to fetch sales data' });
@@ -160,18 +162,28 @@ const bulkDeleteSales = async (req, res) => {
 
 const getSalesTrends = async (req, res) => {
   try {
-    const { timeframe = 'monthly' } = req.query;
+    const { timeframe = 'monthly', dateFrom, dateTo } = req.query;
     
     const validTimeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     if (!validTimeframes.includes(timeframe)) {
       return res.status(400).json({ error: 'Invalid timeframe' });
     }
 
-    const result = await salesService.getSalesTrends(timeframe);
+    const result = await salesService.getSalesTrends(timeframe, dateFrom, dateTo);
     res.json(result);
   } catch (error) {
     console.error('Error fetching sales trends:', error);
     res.status(500).json({ error: 'Failed to fetch sales trends' });
+  }
+};
+
+const getSalesDebug = async (req, res) => {
+  try {
+    const info = await salesService.getSalesDebug();
+    res.json(info);
+  } catch (error) {
+    console.error('Error fetching sales debug:', error);
+    res.status(500).json({ error: 'Failed to fetch sales debug info' });
   }
 };
 
@@ -183,6 +195,7 @@ module.exports = {
   uploadCSV,
   exportSalesCSV,
   bulkDeleteSales,
-  getSalesTrends
+  getSalesTrends,
+  getSalesDebug
 };
 

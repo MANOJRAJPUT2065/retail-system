@@ -6,6 +6,7 @@ require('dotenv').config();
 const salesRoutes = require('./routes/sales');
 const productsRoutes = require('./routes/products');
 const ordersRoutes = require('./routes/orders');
+const salesService = require('./services/salesService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,21 +33,44 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://manojrajput2065:Himalaya%40123@cluster0.qpxsllw.mongodb.net/retail_sales', {
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://manojrajput2065:Himalaya%40123@cluster0.qpxsllw.mongodb.net/retail_sales';
+
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB connected successfully');
+});
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err?.message || err);
+});
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected');
+});
+
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected successfully'))
-.catch((err) => console.error('MongoDB connection error:', err));
+});
 
 // Routes
 app.use('/api/sales', salesRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 
+// Alias route: provide dashboard stats at /api/dashboard/stats
+app.get('/api/dashboard/stats', async (req, res) => {
+  try {
+    const stats = await salesService.getDashboardStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching dashboard stats (alias):', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  const stateMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  const dbState = stateMap[mongoose.connection.readyState] || 'unknown';
+  res.json({ status: 'OK', port: PORT, db: dbState });
 });
 
 // Error handling middleware

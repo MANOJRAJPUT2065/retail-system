@@ -19,7 +19,8 @@ const SalesPage = () => {
     updateFilters,
     updatePage,
     resetFilters,
-    loadMore
+    limit,
+    updateLimit
   } = useSales();
 
   const { options: filterOptions, loading: optionsLoading } = useFilterOptions();
@@ -87,16 +88,25 @@ const SalesPage = () => {
                 <>
                   <div className="sales-info">
                     <span className="record-count">📊 Total Records: {pagination.totalItems}</span>
-                    <span className="record-progress">Showing {sales.length} of {pagination.totalItems}</span>
+                    <span className="record-progress">Page {pagination.currentPage} of {pagination.totalPages}</span>
+                    <label className="page-size">
+                      Per page:
+                      <select value={limit} onChange={(e) => updateLimit(parseInt(e.target.value))}>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </label>
                   </div>
                   <SalesTable sales={sales} />
-                  {pagination.hasNextPage && (
-                    <div className="load-more-container">
-                      <button className="load-more" onClick={loadMore} disabled={loading}>
-                        {loading ? 'Loading…' : `Load More (${sales.length}/${pagination.totalItems})`}
-                      </button>
-                    </div>
-                  )}
+                  <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    hasNextPage={pagination.hasNextPage}
+                    hasPrevPage={pagination.hasPrevPage}
+                    onPageChange={updatePage}
+                  />
                 </>
               )}
             </>

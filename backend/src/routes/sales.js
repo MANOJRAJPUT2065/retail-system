@@ -28,6 +28,9 @@ router.get('/dashboard/stats', salesController.getDashboardStats);
 // Get sales trends
 router.get('/trends', salesController.getSalesTrends);
 
+// Debug: totals and sample docs
+router.get('/debug', salesController.getSalesDebug);
+
 // Export sales data as CSV
 router.get('/export/csv', salesController.exportSalesCSV);
 

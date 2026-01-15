@@ -5,7 +5,9 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
-  getInventory
+  getInventory,
+  adjustStock,
+  getLowStock
 } = require('../controllers/productController');
 
 // Get all products
@@ -13,6 +15,8 @@ router.get('/', getProducts);
 
 // Get inventory (same as products but with stock info)
 router.get('/inventory', getInventory);
+// Low stock
+router.get('/inventory/low', getLowStock);
 
 // Create new product
 router.post('/', createProduct);
@@ -22,5 +26,8 @@ router.put('/:id', updateProduct);
 
 // Delete product
 router.delete('/:id', deleteProduct);
+
+// Bulk stock adjust
+router.post('/inventory/adjust', adjustStock);
 
 module.exports = router;

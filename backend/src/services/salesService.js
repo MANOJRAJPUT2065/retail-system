@@ -1,4 +1,5 @@
 const Sale = require('../models/Sale');
+const Product = require('../models/product.model');
 const { buildQuery, buildSort } = require('../utils/queryBuilder');
 const fs = require('fs');
 const csv = require('csv-parser');
@@ -271,6 +272,37 @@ const createQuickOrder = async (orderData) => {
     // Insert all sales records
     const result = await Sale.insertMany(salesRecords);
 
+    // Update inventory based on items sold
+    const totalsByProduct = new Map();
+    items.forEach((item) => {
+      const name = (item.productName || 'Unknown Product').trim();
+      const qty = parseInt(item.quantity) || 1;
+      totalsByProduct.set(name, (totalsByProduct.get(name) || 0) + qty);
+    });
+
+    // Apply inventory updates
+    await Promise.all([
+      ...Array.from(totalsByProduct.entries()).map(async ([name, qty]) => {
+        const existing = await Product.findOne({ name });
+        if (existing) {
+          const newQty = Math.max(0, (existing.quantity || 0) - qty);
+          existing.quantity = newQty;
+          existing.updatedAt = new Date();
+          await existing.save();
+        } else {
+          await Product.create({
+            name,
+            category: 'Uncategorized',
+            price: 0,
+            quantity: 0,
+            description: 'Auto-created from sale',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        }
+      })
+    ]);
+
     console.log('Successfully inserted records:', result.length);
 
     return {
@@ -432,7 +464,7 @@ const bulkDeleteSales = async (saleIds) => {
   }
 };
 
-const getSalesTrends = async (timeframe) => {
+const getSalesTrends = async (timeframe, dateFrom, dateTo) => {
   try {
     let groupBy;
     let dateFormat;
@@ -459,11 +491,23 @@ const getSalesTrends = async (timeframe) => {
         dateFormat = 'month';
     }
 
+    // Build date filter
+    const dateFilter = { date: { $exists: true } };
+    if (dateFrom || dateTo) {
+      dateFilter.date = {};
+      if (dateFrom) {
+        dateFilter.date.$gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        dateFilter.date.$lte = endDate;
+      }
+    }
+
     const trends = await Sale.aggregate([
       {
-        $match: {
-          date: { $exists: true }
-        }
+        $match: dateFilter
       },
       {
         $group: {
@@ -526,6 +570,22 @@ module.exports = {
   processCSVFile,
   exportSalesAsCSV,
   bulkDeleteSales,
-  getSalesTrends
+  getSalesTrends,
+  getSalesDebug: async () => {
+    const total = await Sale.countDocuments({});
+    const sample = await Sale.find({}).sort({ date: -1 }).limit(5).lean();
+    return {
+      total,
+      sample: sample.map(s => ({
+        customerName: s.customerName,
+        phoneNumber: s.phoneNumber,
+        productName: s.productName,
+        productCategory: s.productCategory,
+        quantity: s.quantity,
+        finalAmount: s.finalAmount,
+        date: s.date
+      }))
+    };
+  }
 };
 

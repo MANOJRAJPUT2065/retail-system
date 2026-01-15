@@ -10,11 +10,17 @@ const CustomersPage = () => {
   const [filterGender, setFilterGender] = useState('');
   const [regions, setRegions] = useState([]);
   const [genders, setGenders] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchCustomers();
     fetchFilters();
   }, [searchTerm, filterRegion, filterGender]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset to page 1 when filters change
+  }, [searchTerm, filterRegion, filterGender, itemsPerPage]);
 
   const fetchCustomers = async () => {
     try {
@@ -22,7 +28,6 @@ const CustomersPage = () => {
       const response = await salesAPI.getSales({
         page: 1,
         limit: 10000, // Fetch all records
-        search: searchTerm,
         regions: filterRegion ? [filterRegion] : [],
         genders: filterGender ? [filterGender] : []
       });
@@ -51,7 +56,18 @@ const CustomersPage = () => {
         }
       });
       
-      setCustomers(Array.from(customerMap.values()));
+      let customerList = Array.from(customerMap.values());
+      
+      // Client-side filtering for customer name and phone
+      if (searchTerm.trim()) {
+        const search = searchTerm.toLowerCase().trim();
+        customerList = customerList.filter(customer =>
+          customer.customerName.toLowerCase().includes(search) ||
+          customer.phoneNumber.includes(search)
+        );
+      }
+      
+      setCustomers(customerList);
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
@@ -67,6 +83,21 @@ const CustomersPage = () => {
     } catch (error) {
       console.error('Error fetching filters:', error);
     }
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(customers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCustomers = customers.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
   };
 
   return (
@@ -104,6 +135,16 @@ const CustomersPage = () => {
             ))}
           </select>
         </div>
+
+        <div className="filter-group">
+          <label>Items per page:</label>
+          <select value={itemsPerPage} onChange={handleItemsPerPageChange}>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -124,8 +165,8 @@ const CustomersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {customers.length > 0 ? (
-                customers.map((customer) => (
+              {paginatedCustomers.length > 0 ? (
+                paginatedCustomers.map((customer) => (
                   <tr key={customer.customerId}>
                     <td className="customer-name">{customer.customerName}</td>
                     <td>{customer.phoneNumber}</td>
@@ -148,6 +189,65 @@ const CustomersPage = () => {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && customers.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, customers.length)} of {customers.length} customers
+          </div>
+          
+          <div className="pagination-controls">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+            >
+              ← Previous
+            </button>
+            
+            <div className="pagination-pages">
+              {currentPage > 2 && (
+                <>
+                  <button onClick={() => handlePageChange(1)} className="pagination-page">1</button>
+                  {currentPage > 3 && <span className="pagination-ellipsis">...</span>}
+                </>
+              )}
+              
+              {currentPage > 1 && (
+                <button onClick={() => handlePageChange(currentPage - 1)} className="pagination-page">
+                  {currentPage - 1}
+                </button>
+              )}
+              
+              <button className="pagination-page active">{currentPage}</button>
+              
+              {currentPage < totalPages && (
+                <button onClick={() => handlePageChange(currentPage + 1)} className="pagination-page">
+                  {currentPage + 1}
+                </button>
+              )}
+              
+              {currentPage < totalPages - 1 && (
+                <>
+                  {currentPage < totalPages - 2 && <span className="pagination-ellipsis">...</span>}
+                  <button onClick={() => handlePageChange(totalPages)} className="pagination-page">
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="pagination-btn"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
 
